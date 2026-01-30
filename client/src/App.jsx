@@ -1,9 +1,32 @@
-import { useEffect, useRef } from "react";
-import { setupCanvas , startStroke , endStroke , addPoint,redrawCanvas } from "./canvas";
+import { useEffect, useRef , useState} from "react";
+import { setupCanvas , startStroke , endStroke , 
+  addPoint,redrawCanvas } from "./canvas";
 
 function App() {
+  
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
+  
+  const [color,setColor]= useState("#ffffffff");
+  const [tool,setTool]= useState("brush");
+  const [width,setWidth]= useState(2);
+  const colorRef = useRef(color);
+  const toolRef = useRef(tool);
+  const widthRef = useRef(width);
+
+  useEffect(() => {
+  colorRef.current = color;
+  }, [color]);
+
+  useEffect(() => {
+  toolRef.current = tool;
+  }, [tool]);
+
+  useEffect(() => {
+  widthRef.current = width;
+  }, [width]);
+
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -26,7 +49,12 @@ window.redraw = () => {
 
     const onMouseDown = (event) => {
       const {x,y} = getMousePosition(event);
-      startStroke(x,y);
+     startStroke(x, y, {
+    color: colorRef.current,
+    width: widthRef.current,
+    tool: toolRef.current
+   });
+
     };
 
     const onMouseMove = (event) => {
@@ -52,7 +80,32 @@ window.redraw = () => {
 
   }, []);
 
-  return <canvas ref={canvasRef} />;
+return (
+  <div className="app">
+   <div className="toolbar">
+  <button onClick={() => setTool("brush")}>Brush</button>
+  <button onClick={() => setTool("eraser")}>Eraser</button>
+
+  <input
+    type="color"
+    value={color}
+    onChange={(e) => setColor(e.target.value)}
+  />
+
+  <input
+    type="range"
+    min="1"
+    max="20"
+    value={width}
+    onChange={(e) => setWidth(Number(e.target.value))}
+  />
+</div>
+
+
+    <canvas ref={canvasRef} />
+  </div>
+);
+
 }
 
 export default App;

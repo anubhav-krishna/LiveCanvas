@@ -16,14 +16,16 @@ let isDrawing = false;
 let activeStroke = null;
 const strokes = []
 
-export function startStroke(x,y){
+export function startStroke(x,y,options){
     isDrawing= true;
 
     activeStroke= {
-        color : "white",
-        width: 2,
+        color : options.color,
+        width: options.width,
+        tool: options.tool,
         points: [{x,y}]
     };
+    strokes.push(activeStroke);
 }
 
 export function addPoint(x,y,ctx){
@@ -32,7 +34,14 @@ export function addPoint(x,y,ctx){
     const points= activeStroke.points;
     const prevPoint= points[points.length -1];
 
-    ctx.strokeStyle= activeStroke.color;
+   if (activeStroke.tool === "eraser") {
+  ctx.globalCompositeOperation = "destination-out";
+   } 
+   else {
+  ctx.globalCompositeOperation = "source-over";
+  ctx.strokeStyle = activeStroke.color;
+  }
+
     ctx.lineWidth= activeStroke.width;
     ctx.lineCap= "round";
     
@@ -45,9 +54,6 @@ export function addPoint(x,y,ctx){
 }
 
 export function endStroke(){
-    if(activeStroke && activeStroke.points.length>0){
-        strokes.push(activeStroke);
-    }
     isDrawing= false;
     activeStroke=null;
 }
