@@ -14,7 +14,10 @@ export function setupCanvas(canvas) {
 
 let isDrawing = false;
 let activeStroke = null;
-const strokes = []
+
+const undoStack = [];
+const redoStack = [];
+
 
 export function startStroke(x,y,options){
     isDrawing= true;
@@ -25,7 +28,8 @@ export function startStroke(x,y,options){
         tool: options.tool,
         points: [{x,y}]
     };
-    strokes.push(activeStroke);
+    undoStack.push(activeStroke);
+    redoStack.length = 0;
 }
 
 export function addPoint(x,y,ctx){
@@ -61,8 +65,8 @@ export function endStroke(){
 export function redrawCanvas(ctx, canvas){
     console.log("Redrawing");
     ctx.clearRect(0,0,canvas.width,canvas.height);
-  setTimeout (()=>{
-    for(const stroke of strokes){
+
+    for(const stroke of undoStack){
         if(stroke.points.length==0)continue;
 
         ctx.beginPath();
@@ -78,5 +82,19 @@ export function redrawCanvas(ctx, canvas){
         }
         ctx.stroke();
     }
-  },200);
 }
+
+export function undo(ctx,canvas){
+  if(undoStack.length === 0)return;
+  const stroke = undoStack.pop();
+  redoStack.push(stroke);
+
+  redrawCanvas(ctx,canvas);
+}
+
+ export function redo(ctx,canvas){
+  if(redoStack.length === 0)return;
+  const stroke = redoStack.pop();
+  undoStack.push(stroke);
+  redrawCanvas(ctx,canvas);
+ }

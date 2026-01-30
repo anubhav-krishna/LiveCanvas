@@ -1,6 +1,6 @@
 import { useEffect, useRef , useState} from "react";
 import { setupCanvas , startStroke , endStroke , 
-  addPoint,redrawCanvas } from "./canvas";
+  addPoint,redrawCanvas, undo, redo } from "./canvas";
 
 function App() {
   
@@ -85,6 +85,13 @@ return (
    <div className="toolbar">
   <button onClick={() => setTool("brush")}>Brush</button>
   <button onClick={() => setTool("eraser")}>Eraser</button>
+  <button onClick={() => undo(contextRef.current, canvasRef.current)}>
+  Undo
+</button>
+
+<button onClick={() => redo(contextRef.current, canvasRef.current)}>
+  Redo
+</button>
 
   <input
     type="color"
