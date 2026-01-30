@@ -1,6 +1,9 @@
 import { useEffect, useRef , useState} from "react";
 import { setupCanvas , startStroke , endStroke , 
   addPoint,redrawCanvas, undo, redo } from "./canvas";
+import socket from "./websockets";
+
+let currentStrokeId = null;
 
 function App() {
   
@@ -55,6 +58,15 @@ window.redraw = () => {
     tool: toolRef.current
    });
 
+   socket.emit("draw:point", {
+    x,
+    y,
+    color: colorRef.current,
+    width: widthRef.current,
+    tool: toolRef.current,
+    strokeId: currentStrokeId
+   });
+
     };
 
     const onMouseMove = (event) => {
@@ -62,6 +74,15 @@ window.redraw = () => {
 
       const {x,y} = getMousePosition(event);
       addPoint(x,y,contextRef.current);
+
+    socket.emit("draw:point", {
+      x,
+      y,
+     color: colorRef.current,
+     width: widthRef.current,
+     tool: toolRef.current,
+     strokeId: currentStrokeId
+    });
     };
 
     const onMouseUp = () => {
