@@ -38,9 +38,11 @@ function App() {
      const ctx= setupCanvas(canvas);
      contextRef.current = ctx;
 
-window.redraw = () => {
-  redrawCanvas(contextRef.current, canvas);
-};
+     window.__canvasCtx = ctx;
+
+    window.redraw = () => {
+    redrawCanvas(contextRef.current, canvas);
+   };
 
    const getMousePosition = (event)=>{
      const rect = canvas.getBoundingClientRect();
@@ -52,6 +54,9 @@ window.redraw = () => {
 
     const onMouseDown = (event) => {
       const {x,y} = getMousePosition(event);
+
+    currentStrokeId = crypto.randomUUID();
+
      startStroke(x, y, {
     color: colorRef.current,
     width: widthRef.current,
@@ -70,7 +75,8 @@ window.redraw = () => {
     };
 
     const onMouseMove = (event) => {
-      if (!contextRef.current) return;
+  
+      if (!currentStrokeId) return;
 
       const {x,y} = getMousePosition(event);
       addPoint(x,y,contextRef.current);
@@ -86,7 +92,14 @@ window.redraw = () => {
     };
 
     const onMouseUp = () => {
-      endStroke();
+     if (!currentStrokeId) return;
+
+    socket.emit("draw:end", {
+    strokeId: currentStrokeId
+    });
+
+    endStroke();
+    currentStrokeId = null;
     };
 
     canvas.addEventListener("mousedown", onMouseDown);

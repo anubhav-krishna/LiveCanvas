@@ -10,13 +10,17 @@ const io = new Server(server, {
     origin: "*",
   }
 });
-io.on("connection", (socket) => {
+ io.on("connection", (socket) => {
   console.log("a user connected:", socket.id);
 
   socket.on("draw:point", (data) => {
     socket.broadcast.emit("draw:point", data);
   }); 
-  
+   
+  socket.on("draw:end", (data) => {
+  socket.broadcast.emit("draw:end", data);
+  });
+
     socket.on("disconnect", () => {
     console.log("user disconnected:", socket.id);
   });

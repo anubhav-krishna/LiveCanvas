@@ -1,3 +1,5 @@
+ const remoteStrokes = new Map();
+
 export function setupCanvas(canvas) {
   const ctx = canvas.getContext("2d");
 
@@ -55,6 +57,7 @@ export function addPoint(x,y,ctx){
     ctx.stroke();
 
     points.push({x,y});
+    ctx.globalCompositeOperation = "source-over";
 }
 
 export function endStroke(){
@@ -63,25 +66,30 @@ export function endStroke(){
 }
 
 export function redrawCanvas(ctx, canvas){
-    console.log("Redrawing");
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0,0,rect.width,rect.height);
 
     for(const stroke of undoStack){
-        if(stroke.points.length==0)continue;
-
-        ctx.beginPath();
-        ctx.strokeStyle= stroke.color;
-        ctx.lineWidth= stroke.width;
-        ctx.lineCap= "round";
-
-        const sPoints= stroke.points;
-        ctx.moveTo(sPoints[0].x,sPoints[0].y);
-
-        for(let i=1;i<sPoints.length;i++){
-          ctx.lineTo(sPoints[i].x,sPoints[i].y);
-        }
-        ctx.stroke();
+       drawStroke(ctx,stroke);
     }
+    for(const stroke of remoteStrokes.values()){
+       drawStroke(ctx,stroke);
+    }
+}
+
+   function drawStroke(ctx,stroke){
+    if(stroke.points.length==0)return;
+    ctx.beginPath();
+    ctx.strokeStyle= stroke.color;
+    ctx.lineWidth= stroke.width;
+    ctx.lineCap= "round";
+    const sPoints= stroke.points;
+    ctx.moveTo(sPoints[0].x,sPoints[0].y);
+    for(let i=1;i<sPoints.length;i++){
+      ctx.lineTo(sPoints[i].x,sPoints[i].y);
+    }
+    ctx.stroke();
 }
 
 export function undo(ctx,canvas){
@@ -98,3 +106,55 @@ export function undo(ctx,canvas){
   undoStack.push(stroke);
   redrawCanvas(ctx,canvas);
  }
+
+ export function startRemoteStroke(strokeId,options){
+    
+    if(remoteStrokes.has(strokeId))return;
+
+
+  remoteStrokes.set(strokeId, {
+        color : options.color,
+        width: options.width,
+        tool: options.tool,
+        points: []
+    });
+ }
+
+
+export function addRemotePoint(ctx,strokeId,x,y){
+    
+    const stroke= remoteStrokes.get(strokeId);
+    if(!stroke)return;
+  
+    const points= stroke.points;
+    const prevPoint= points[points.length -1];
+
+   if (stroke.tool === "eraser") {
+  ctx.globalCompositeOperation = "destination-out";
+   } 
+   else {
+  ctx.globalCompositeOperation = "source-over";
+  ctx.strokeStyle = stroke.color;
+  }
+
+    ctx.lineWidth= stroke.width;
+    ctx.lineCap= "round";
+    
+    ctx.beginPath();
+   
+    if(prevPoint){
+    ctx.moveTo(prevPoint.x,prevPoint.y);
+    }
+    else{
+    ctx.moveTo(x,y);
+    }
+    ctx.lineTo(x,y);
+    ctx.stroke();
+
+    points.push({x,y});
+    ctx.globalCompositeOperation = "source-over";
+}
+
+export function endRemoteStroke(strokeId){
+   //Remote stroke ends here
+}
