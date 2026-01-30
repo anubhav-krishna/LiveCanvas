@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { setupCanvas , startStroke , endStroke , addPoint } from "./canvas";
+import { setupCanvas , startStroke , endStroke , addPoint,redrawCanvas } from "./canvas";
 
 function App() {
   const canvasRef = useRef(null);
@@ -11,6 +11,10 @@ function App() {
 
      const ctx= setupCanvas(canvas);
      contextRef.current = ctx;
+
+window.redraw = () => {
+  redrawCanvas(contextRef.current, canvas);
+};
 
    const getMousePosition = (event)=>{
      const rect = canvas.getBoundingClientRect();

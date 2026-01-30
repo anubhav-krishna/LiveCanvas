@@ -14,6 +14,7 @@ export function setupCanvas(canvas) {
 
 let isDrawing = false;
 let activeStroke = null;
+const strokes = []
 
 export function startStroke(x,y){
     isDrawing= true;
@@ -44,6 +45,32 @@ export function addPoint(x,y,ctx){
 }
 
 export function endStroke(){
+    if(activeStroke && activeStroke.points.length>0){
+        strokes.push(activeStroke);
+    }
     isDrawing= false;
     activeStroke=null;
+}
+
+export function redrawCanvas(ctx, canvas){
+    console.log("Redrawing");
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  setTimeout (()=>{
+    for(const stroke of strokes){
+        if(stroke.points.length==0)continue;
+
+        ctx.beginPath();
+        ctx.strokeStyle= stroke.color;
+        ctx.lineWidth= stroke.width;
+        ctx.lineCap= "round";
+
+        const sPoints= stroke.points;
+        ctx.moveTo(sPoints[0].x,sPoints[0].y);
+
+        for(let i=1;i<sPoints.length;i++){
+          ctx.lineTo(sPoints[i].x,sPoints[i].y);
+        }
+        ctx.stroke();
+    }
+  },200);
 }
