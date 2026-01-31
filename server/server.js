@@ -11,7 +11,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"],
+    origin: ["https://live-canvas-8wwadstr7-anubhav-krishnas-projects.vercel.app/","http://localhost:5173"],
     methods: ["GET", "POST"]
   }
 });
