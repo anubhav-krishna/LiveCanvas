@@ -77,6 +77,16 @@ export function redrawCanvas(ctx, canvas){
 
    function drawStroke(ctx,stroke){
     if(stroke.points.length==0)return;
+     
+     ctx.save();
+     
+     if (stroke.tool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        }
+        else {
+        ctx.globalCompositeOperation = "source-over";
+        }
+
     ctx.beginPath();
     ctx.strokeStyle= stroke.color;
     ctx.lineWidth= stroke.width;
