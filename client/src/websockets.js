@@ -1,37 +1,58 @@
  import {io} from "socket.io-client";
- import {applyServerState,startRemoteStroke,addRemotePoint,endRemoteStroke, clearRemoteStrokes} from "./canvas.js";
+//  import {applyServerState,startRemoteStroke,addRemotePoint,endRemoteStroke, clearRemoteStrokes} from "./canvas.js";
 
-  window.__pendingCanvasState= null;
+  // window.__pendingCanvasState= null;
 
  const socket = io("http://localhost:3000");
 
+  let onCanvasState = null;
+  let onRemotePoint = null;
+  let onRemoteEnd = null;
+  let onCursorUpdate= null;
+
   socket.on("connect", () => {
-    console.log("Connected to WebSocket server");
+    console.log("Connected to WebSocket server: ", socket.id);
   });
 
   socket.on("draw:point", (data) => {
-    const ctx = window.__canvasCtx;
-    if (!ctx) return;
-    const { strokeId, x, y, color, width, tool } = data;
-    if(color!==undefined){
-    startRemoteStroke(strokeId, { color, width, tool });
+    if(onRemotePoint){
+      onRemotePoint(data);
     }
-    addRemotePoint(ctx, strokeId, x, y);
   });
 
    socket.on("canvas:state", (operation) => {
-    const ctx = window.__canvasCtx;
-    if (!ctx){
-      window.__pendingCanvasState = operation;
-      return;
-    }
-     clearRemoteStrokes();
-    applyServerState(operation, ctx);
+     if(onCanvasState){
+       onCanvasState(operation);
+     }
   });
 
 socket.on("draw:end", ({ strokeId }) => {
-  endRemoteStroke(strokeId);
+  if(onRemoteEnd){
+    onRemoteEnd(strokeId);
+  }
 });
+
+socket.on("cursor:update", (data) => {
+  if(onCursorUpdate){
+    onCursorUpdate(data);
+  }
+});
+
+ export function registerCanvasStateHandler({
+  handleCanvasState,
+    handleRemotePoint,
+    handleRemoteEnd,
+    handleCursorUpdate
+  }){
+    onCanvasState=  handleCanvasState;
+    onRemotePoint= handleRemotePoint;
+    onRemoteEnd= handleRemoteEnd;
+    onCursorUpdate= handleCursorUpdate;
+  }
+
+  export function requestCanvasState(){
+    socket.emit("request:state");
+  }
 
   export function undoUser(){
     socket.emit("undo:user");
@@ -43,6 +64,10 @@ socket.on("draw:end", ({ strokeId }) => {
 
   export function redo(){
     socket.emit("redo");
+  }
+
+  export function sendCursorPosition(x,y){
+    socket.emit("cursor:move", {x,y});
   }
 
   socket.on("disconnect", () => {

@@ -73,9 +73,6 @@ export function redrawCanvas(ctx, canvas){
     for(const stroke of undoStack){
        drawStroke(ctx,stroke);
     }
-    for(const stroke of remoteStrokes.values()){
-       drawStroke(ctx,stroke);
-    }
 }
 
    function drawStroke(ctx,stroke){
@@ -166,6 +163,9 @@ export function clearRemoteStrokes(){
 
  export function applyServerState(operations,ctx){
     if(!ctx) return;
+
+    undoStack.length=0;
+    redoStack.length=0;
     
     const canvas = ctx.canvas;
     const rect = canvas.getBoundingClientRect();
@@ -173,6 +173,7 @@ export function clearRemoteStrokes(){
 
     for(const op of operations){
          if(op.type === "stroke"){
+            undoStack.push(op.data);
             drawStroke(ctx,op.data);
          }          
         }

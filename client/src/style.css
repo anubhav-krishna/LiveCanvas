@@ -36,3 +36,22 @@ canvas {
   display: block;
   background: black;
 }
+
+.app {
+  position: relative;
+}
+
+.cursor-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cursor {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: red;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}

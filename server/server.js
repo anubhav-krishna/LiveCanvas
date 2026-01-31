@@ -57,6 +57,15 @@ const io = new Server(server, {
     socket.on("disconnect", () => {
     console.log("user disconnected:", socket.id);
   });
+
+  socket.on("cursor:move", (data) => {
+    socket.broadcast.emit("cursor:update", {
+      userId: socket.id,
+      x: data.x,
+      y: data.y
+    });
+  });
+
 });
 
 const PORT = process.env.PORT || 3000;

@@ -1,9 +1,31 @@
 import { useEffect, useRef , useState} from "react";
-import { setupCanvas , startStroke , endStroke ,addPoint, applyServerState } from "./canvas";
-import socket, { undoUser, undoGlobal,redo } from "./websockets";
+import { setupCanvas , startStroke , endStroke ,addPoint, applyServerState, startRemoteStroke, addRemotePoint
+         ,endRemoteStroke,clearRemoteStrokes} from "./canvas";
+import socket, {registerCanvasStateHandler, requestCanvasState, undoUser, undoGlobal, redo, sendCursorPosition} from "./websockets";
 
 let currentStrokeId = null;
 let currentStrokeData = null;
+
+function getUserColor(userId){
+   let hash=0;
+    for(let i=0;i<userId.length;i++){
+      hash= userId.charCodeAt(i) + ((hash <<5) - hash);
+    }
+    const color= `hsl(${hash % 360}, 70%, 55%)`;
+    return color;
+}
+
+function throttle(fn,limit){
+  let lastCall=0;
+  return function(...args){
+    const now= Date.now();
+    if(now - lastCall >= limit){
+      lastCall= now;
+      fn(...args);
+    }
+  };
+}
+
 
 function App() {  
   const canvasRef = useRef(null);
@@ -12,6 +34,7 @@ function App() {
   const [color,setColor]= useState("#ffffffff");
   const [tool,setTool]= useState("brush");
   const [width,setWidth]= useState(2);
+  const [cursors,setCursors]= useState({});
   const colorRef = useRef(color);
   const toolRef = useRef(tool);
   const widthRef = useRef(width);
@@ -37,15 +60,40 @@ function App() {
      const ctx= setupCanvas(canvas);
      contextRef.current = ctx;
 
-     window.__canvasCtx = ctx;
+    registerCanvasStateHandler({
+      handleCanvasState: (operations) => {
+        clearRemoteStrokes();
+        applyServerState(operations,ctx);
+      },
+      handleRemotePoint: (data) => {
+        const { x, y, strokeId, color, width, tool } = data;
 
-     if(window.__pendingCanvasState){
-      applyServerState(window.__pendingCanvasState,ctx);
-      window.__pendingCanvasState= null;
-     }
+        if(color!== undefined){
+          startRemoteStroke(strokeId, { color, width, tool });
+        }
+        addRemotePoint(ctx, strokeId, x, y);
+      },
+      handleRemoteEnd: (strokeId) => {
+        endRemoteStroke(strokeId);
+      },
+      handleCursorUpdate: ({userId,x,y})=>{
+        setCursors((prevCursors)=>{
+          const existing= prevCursors[userId];
+          return {
+            ...prevCursors,
+            [userId]: {x,
+              y,
+             color: existing?.color || getUserColor(userId),
+             lastSeen: Date.now()
+            }
+          };
+        });
+      }
+    });
+     
+    requestCanvasState();
+    const throttledCursorSend= throttle(sendCursorPosition,40);
 
-  socket.emit("request:state"); 
-  
    const getMousePosition = (event)=>{
      const rect = canvas.getBoundingClientRect();
      return {
@@ -78,10 +126,12 @@ function App() {
   };
 
     const onMouseMove = (event) => {
-  
-      if (!currentStrokeId) return;
+       const {x,y} = getMousePosition(event);
 
-      const {x,y} = getMousePosition(event);
+      throttledCursorSend(x,y);
+
+       if(!currentStrokeId) return;
+
       addPoint(x,y,contextRef.current);
       currentStrokeData.points.push({x,y});
       
@@ -115,6 +165,23 @@ function App() {
 
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setCursors((prevCursors) => {
+        const updatedCursors = {};
+        for (const [id, pos] of Object.entries(prevCursors)) {
+          if (now - pos.lastSeen < 3000) {
+            updatedCursors[id] = pos;
+          }
+        }
+        return updatedCursors;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
 return (
   <div className="app">
    <div className="toolbar">
@@ -141,6 +208,19 @@ return (
 
 
     <canvas ref={canvasRef} />
+    <div className="cursor-layer">
+  {Object.entries(cursors).map(([id, pos]) => (
+    <div
+      key={id}
+      className="cursor"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        backgroundColor: pos.color
+      }}
+    />
+  ))}
+</div>
   </div>
 );
 
