@@ -10,11 +10,16 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
+  path: "/socket.io",
   cors: {
-    origin: ["https://live-canvas-n4m5rdyvw-anubhav-krishnas-projects.vercel.app","http://localhost:5173"],
-    methods: ["GET", "POST"]
-  }
+    origin: [
+      "https://live-canvas-n4m5rdyvw-anubhav-krishnas-projects.vercel.app",
+      "http://localhost:5173"
+    ],
+    methods: ["GET", "POST"],
+  },
 });
+
  io.on("connection", (socket) => {
   console.log("a user connected:", socket.id);
 
