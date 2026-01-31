@@ -1,6 +1,8 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
+ import { addOperation,undoGlobal,undoUser,redo,getState } from "./drawing-state.js";
+
 
 const app = express();
 const server = http.createServer(app);
@@ -13,12 +15,43 @@ const io = new Server(server, {
  io.on("connection", (socket) => {
   console.log("a user connected:", socket.id);
 
-  socket.on("draw:point", (data) => {
-    socket.broadcast.emit("draw:point", data);
-  }); 
+  socket.on("request:state", () => {
+  socket.emit("canvas:state", getState());
+});
+
+   socket.on("draw:point", (stroke) => {
+    socket.broadcast.emit("draw:point", stroke);
+  });
+
+  socket.on("draw:end", ({ strokeId }) => {
+  socket.broadcast.emit("draw:end", { strokeId });
+});
+
    
-  socket.on("draw:end", (data) => {
-  socket.broadcast.emit("draw:end", data);
+   socket.on("stroke:commit", (stroke) => {
+     const operation = {
+      id: stroke.id,
+      userId: socket.id,
+      type: "stroke",
+      data: stroke
+     };
+      addOperation(operation);
+      io.emit("canvas:state", getState());
+    });
+
+    socket.on("undo:user", () => {
+      undoUser(socket.id);
+    io.emit("canvas:state",getState());
+  });
+   
+    socket.on("undo:global", () => {
+    undoGlobal();
+    io.emit("canvas:state",getState());
+  });
+
+    socket.on("redo", () => {
+    redo();
+    io.emit("canvas:state",getState());
   });
 
     socket.on("disconnect", () => {

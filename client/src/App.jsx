@@ -1,12 +1,11 @@
 import { useEffect, useRef , useState} from "react";
-import { setupCanvas , startStroke , endStroke , 
-  addPoint,redrawCanvas, undo, redo } from "./canvas";
-import socket from "./websockets";
+import { setupCanvas , startStroke , endStroke ,addPoint, applyServerState } from "./canvas";
+import socket, { undoUser, undoGlobal,redo } from "./websockets";
 
 let currentStrokeId = null;
+let currentStrokeData = null;
 
-function App() {
-  
+function App() {  
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   
@@ -40,10 +39,13 @@ function App() {
 
      window.__canvasCtx = ctx;
 
-    window.redraw = () => {
-    redrawCanvas(contextRef.current, canvas);
-   };
+     if(window.__pendingCanvasState){
+      applyServerState(window.__pendingCanvasState,ctx);
+      window.__pendingCanvasState= null;
+     }
 
+  socket.emit("request:state"); 
+  
    const getMousePosition = (event)=>{
      const rect = canvas.getBoundingClientRect();
      return {
@@ -56,23 +58,24 @@ function App() {
       const {x,y} = getMousePosition(event);
 
     currentStrokeId = crypto.randomUUID();
-
-     startStroke(x, y, {
-    color: colorRef.current,
-    width: widthRef.current,
-    tool: toolRef.current
-   });
-
-   socket.emit("draw:point", {
-    x,
-    y,
-    color: colorRef.current,
-    width: widthRef.current,
-    tool: toolRef.current,
-    strokeId: currentStrokeId
-   });
-
+    currentStrokeData = {
+      id: currentStrokeId,
+      color: colorRef.current,
+      width: widthRef.current,
+      tool: toolRef.current,
+      points: [{x,y}]
     };
+    startStroke(x,y,currentStrokeData);
+
+    socket.emit("draw:point",{
+      x,
+      y,
+      strokeId: currentStrokeId,
+      color: colorRef.current,
+      width: widthRef.current,
+      tool: toolRef.current
+    });
+  };
 
     const onMouseMove = (event) => {
   
@@ -80,26 +83,24 @@ function App() {
 
       const {x,y} = getMousePosition(event);
       addPoint(x,y,contextRef.current);
-
-    socket.emit("draw:point", {
-      x,
-      y,
-     color: colorRef.current,
-     width: widthRef.current,
-     tool: toolRef.current,
-     strokeId: currentStrokeId
-    });
+      currentStrokeData.points.push({x,y});
+      
+      socket.emit("draw:point",{
+        x,
+        y,
+        strokeId: currentStrokeId
+      });
     };
 
     const onMouseUp = () => {
-     if (!currentStrokeId) return;
+     if (!currentStrokeId || !currentStrokeData) return;
 
-    socket.emit("draw:end", {
-    strokeId: currentStrokeId
-    });
+    socket.emit("draw:end", { strokeId: currentStrokeId });
+    socket.emit("stroke:commit", currentStrokeData);
 
     endStroke();
     currentStrokeId = null;
+    currentStrokeData = null;
     };
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -119,13 +120,9 @@ return (
    <div className="toolbar">
   <button onClick={() => setTool("brush")}>Brush</button>
   <button onClick={() => setTool("eraser")}>Eraser</button>
-  <button onClick={() => undo(contextRef.current, canvasRef.current)}>
-  Undo
-</button>
-
-<button onClick={() => redo(contextRef.current, canvasRef.current)}>
-  Redo
-</button>
+  <button onClick={() => undoUser()}>Undo(Mine)</button>
+  <button onClick={() => undoGlobal()}>Undo(Global)</button>
+  <button onClick={() => redo()}>Redo</button>
 
   <input
     type="color"

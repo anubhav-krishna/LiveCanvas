@@ -157,4 +157,23 @@ export function addRemotePoint(ctx,strokeId,x,y){
 
 export function endRemoteStroke(strokeId){
    //Remote stroke ends here
+    remoteStrokes.delete(strokeId);
+}
+
+export function clearRemoteStrokes(){
+    remoteStrokes.clear();
+}
+
+ export function applyServerState(operations,ctx){
+    if(!ctx) return;
+    
+    const canvas = ctx.canvas;
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0,0,rect.width,rect.height);
+
+    for(const op of operations){
+         if(op.type === "stroke"){
+            drawStroke(ctx,op.data);
+         }          
+        }
 }
