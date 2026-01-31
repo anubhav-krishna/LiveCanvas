@@ -7,7 +7,7 @@
   reconnection : true,
  });
   
- console.log("WebSocket URL:", import.meta.env.VITE_SOCKET_URL);
+ //console.log("WebSocket URL:", import.meta.env.VITE_SOCKET_URL);
 
   let onCanvasState = null;
   let onRemotePoint = null;
