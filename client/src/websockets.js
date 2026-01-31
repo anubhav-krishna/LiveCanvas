@@ -1,9 +1,13 @@
  import {io} from "socket.io-client";
 //  import {applyServerState,startRemoteStroke,addRemotePoint,endRemoteStroke, clearRemoteStrokes} from "./canvas.js";
 
-  // window.__pendingCanvasState= null;
-
- const socket = io("http://localhost:3000");
+ const socket = io(import.meta.env.VITE_SOCKET_URL , {
+  path : "/socket.io",
+  trasports: ["websocket"],
+  reconnection : true,
+ });
+  
+ console.log("WebSocket URL:", import.meta.env.VITE_SOCKET_URL);
 
   let onCanvasState = null;
   let onRemotePoint = null;
