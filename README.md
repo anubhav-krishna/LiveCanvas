@@ -8,7 +8,7 @@ This project demonstrates **Canvas mastery**, **real-time system design**, and *
 
 ## 🚀 Live Demo
 
-- **Frontend (Vercel):** https://live-canvas-c0mw2l5jl-anubhav-krishnas-projects.vercel.app  
+- **Frontend (Vercel):** https://live-canvas-navy.vercel.app  
 - **Backend (Railway):** https://livecanvas-production.up.railway.app
 
 ---
