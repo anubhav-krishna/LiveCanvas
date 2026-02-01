@@ -13,7 +13,7 @@ const io = new Server(server, {
   path: "/socket.io",
   cors: {
     origin: [
-      "https://live-canvas-n4m5rdyvw-anubhav-krishnas-projects.vercel.app",
+      "https://live-canvas-c0mw2l5jl-anubhav-krishnas-projects.vercel.app",
       "http://localhost:5173"
     ],
     methods: ["GET", "POST"],
